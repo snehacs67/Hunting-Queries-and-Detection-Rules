@@ -1,0 +1,18 @@
+Description: Detects file download activities from cloud apps and extracts sensitivity labels for files and sites, which may indicate data exfiltration.
+severity: High
+
+tactic: Exfiltration
+      : Collection
+technique: T1530 # Data from Cloud Storage Object
+         : T1074 # Data Staged
+         : T1048 # Exfiltration Over Alternative Protocol
+
+Query: 
+  let LookBack = 7d;
+  CloudAppEvents
+  | where ActionType == "FileDownloaded" and Timestamp > ago(LookBack)
+  | extend FileName = RawEventData.SourceFileName
+  | extend Site = RawEventData.SiteUrl
+  | extend FileLabel = RawEventData.SensitivityLabelId
+  | extend SiteLabel = RawEventData.SiteSensitivityLabelId
+  | project Timestamp, AccountObjectId, AccountDisplayName, ActionType, Application, FileName, Site, FileLabel, SiteLabel
