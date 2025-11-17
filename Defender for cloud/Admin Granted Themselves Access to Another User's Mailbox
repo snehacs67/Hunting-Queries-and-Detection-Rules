@@ -1,0 +1,21 @@
+Description: Detects when an administrator grants themselves access to another user's mailbox, which may indicate privilege escalation or insider threat activity.
+severity: High
+
+tactics:
+  - Privilege Escalation
+techniques:
+  - T1098: Account Manipulation
+
+Query: |
+  CloudAppEvents
+  | extend Operation = tostring(RawEventData.Operation)
+  | where Operation == "Add-MailboxPermission"
+  | extend TargetMailbox = tostring(parse_json(tostring(RawEventData.Parameters))[2].Value)
+  | extend UserAdded = tostring(parse_json(tostring(RawEventData.Parameters))[3].Value)
+  | extend AccessGranted = tostring(parse_json(tostring(RawEventData.Parameters))[4].Value)
+  | extend Actor = tostring(RawEventData.UserId)
+  | extend ActorRole = tostring(RawEventData.Role)
+  | where Actor =~ UserAdded // Actor granted themselves permission
+  | where Actor != TargetMailbox // Target mailbox is not their own
+  | where ActorRole contains "Admin" // Actor is an Exchange admin
+  | project TimeGenerated, Actor, ActorRole, TargetMailbox, UserAdded, AccessGranted
