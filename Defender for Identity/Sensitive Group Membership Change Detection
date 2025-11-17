@@ -1,6 +1,14 @@
 Name: Sensitive Group Membership Change Detection.
 description: Detects when accounts are added to sensitive groups like Domain Admins, Enterprise Admins, Exchange Admins.
 severity: High
+
+tactics:
+  - PrivilegeEscalation
+  - Persistence
+techniques:
+  - T1078  # Valid Accounts
+  - T1098  # Account Manipulation
+
   queryFrequency: PT10M   
   queryPeriod: PT30M
   triggerOperator: GreaterThan
