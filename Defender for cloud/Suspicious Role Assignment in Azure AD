@@ -1,0 +1,17 @@
+Description: Detects when a user is added to a privileged role, which may indicate privilege escalation or insider threat.
+severity: High
+
+tactic: Privilege Escalation
+      : Persistence
+technique: T1098 # Account Manipulation
+
+Query: |
+  let LookBack = 7d;
+  CloudAppEvents
+  | where ActionType in ("Add member to role.") and Timestamp > ago(LookBack)
+  | extend FirstElement = ActivityObjects[0], SecondElement = ActivityObjects[1], ThirdElement = ActivityObjects[2]
+  | extend Type = FirstElement.ServiceObjectType
+  | extend RoleName = FirstElement.Name
+  | extend UserAddedName = SecondElement.Name
+  | extend UserAddedObjectId = SecondElement.Id
+  | project Timestamp, Type, ActionType, RoleName, UserAddedName, UserAddedObjectId, PerformedByObjectId = AccountId, PerformedByDisplayName
