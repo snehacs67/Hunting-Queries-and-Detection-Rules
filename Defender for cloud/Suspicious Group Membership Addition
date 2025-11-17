@@ -1,0 +1,15 @@
+Description: Detects when a regular account adds a user to a group, which may indicate privilege escalation or insider threat.
+severity: High
+
+tactic: Privilege Escalation
+      : Persistence
+technique: T1098 # Account Manipulation
+
+Query: 
+  let LookBack = 7d;
+  CloudAppEvents
+  | where ActionType in ("Add member to group.") and AccountType == "Regular" and Timestamp > ago(LookBack)
+  | extend SecondElement = RawEventData.ModifiedProperties[1]
+  | extend UserAddedId = RawEventData.ObjectId
+  | extend GroupName = SecondElement.NewValue
+  | project Timestamp, ActionType, UserAddedId, PerformedBy = AccountDisplayName, GroupName
