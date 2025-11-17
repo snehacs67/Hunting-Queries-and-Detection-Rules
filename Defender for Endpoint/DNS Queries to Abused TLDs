@@ -1,0 +1,19 @@
+Description: Detects DNS queries to domains with commonly abused TLDs (.click, .club, .download, .xxx, .xyz), which may indicate phishing or malware activity.
+severity: Medium
+
+tactic: Command and Control
+      : Exfiltration
+technique: T1071.004 # Application Layer Protocol: DNS
+         : T1568 # Dynamic Resolution
+         : T1048 # Exfiltration Over Alternative Protocol
+
+Query: 
+  let abusedTLD = dynamic(["click", "club", "download", "xxx", "xyz"]);
+  DnsEvents
+  | where Name has "."
+  | extend tld = tostring(split(Name, ".")[-1])
+  | where tld in~ (abusedTLD)
+  | summarize StartTime = min(TimeGenerated), EndTime = max(TimeGenerated), NameCount = count() by Name, ClientIP, tld
+  | order by NameCount desc
+  | extend DNS_0_DomainName = Name
+  | extend IP_0_Address = ClientIP
