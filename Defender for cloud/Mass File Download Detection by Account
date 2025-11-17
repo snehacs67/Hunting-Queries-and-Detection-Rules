@@ -1,0 +1,18 @@
+Description: Detects accounts downloading an unusually high number of files from cloud apps within a defined lookback period, which may indicate automated exfiltration or insider threat activity.
+severity: High
+
+tactics:Exfiltration
+techniques:
+  - T1020: Automated Exfiltration
+  - T1048: Exfiltration Over Alternative Protocol
+  
+Query:
+  let LookBack = 7d;
+  let DownloadThreshold = 50;
+  CloudAppEvents
+  | where ActionType == "FileDownloaded" and Timestamp > ago(LookBack)
+  | summarize FileCount = count() by AccountDisplayName, AccountObjectId, Application, ClientIP
+  | where FileCount > DownloadThreshold
+  | sort by FileCount desc
+  | extend LookBackPeriod = LookBack
+  | project Timestamp = now(), AccountDisplayName, AccountObjectId, Application, ClientIP, FileCount, LookBackPeriod
