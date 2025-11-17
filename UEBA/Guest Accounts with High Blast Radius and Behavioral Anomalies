@@ -1,0 +1,41 @@
+Description: This query identifies guest accounts in Microsoft Entra ID that have a high blast radius, also applies behavior analytics to detect anomalies such as unusual sign-in frequency
+  compared to the user's baseline activity.
+
+tactics:
+  - "Initial Access"
+  - "Privilege Escalation"
+  - "Lateral Movement"
+
+techniques:
+  - "T1078: Valid Accounts"
+  - "T1098: Account Manipulation"
+  - "T1071: Application Layer Protocol"
+
+Query:
+  let baselineActivity = SigninLogs
+  | where TimeGenerated > ago(30d)
+  | summarize avgSignIns = avg(SignInCount) by UserPrincipalName;
+
+  IdentityInfo
+  | where TimeGenerated > ago(30d)
+  | summarize arg_max(TimeGenerated, *) by AccountUPN
+  | where UserType == "Guest" and BlastRadius == "High"
+  | join kind=leftouter (
+      SigninLogs
+      | where TimeGenerated > ago(30d)
+      | summarize SignInCount = count(), LastSignIn = max(TimeGenerated) by UserPrincipalName
+  ) on $left.AccountUPN == $right.UserPrincipalName
+  | join kind=leftouter baselineActivity on $left.AccountUPN == $right.UserPrincipalName
+  | extend AnomalyFlag = iff(SignInCount > (avgSignIns * 2), "Unusual Activity", "Normal")
+  | project AccountUPN,
+            AccountDisplayName,
+            BlastRadius,
+            RiskLevel,
+            ResourceAccessCount,
+            SensitiveResourceCount,
+            PrivilegedRoleCount,
+            LastSignIn,
+            SignInCount,
+            avgSignIns,
+            AnomalyFlag
+  | order by RiskLevel desc
