@@ -1,5 +1,10 @@
 Description: Identifies a match in Fortinet firewall data in CommonSecurityLog table from any Domain IOC from TI
 
+tactics:
+  - CommandAndControl
+relevantTechniques:
+  - T1071
+
 requiredDataConnectors:
   - connectorId: FortinetFortiGate
     dataTypes:
