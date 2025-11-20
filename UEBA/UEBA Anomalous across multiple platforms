@@ -1,0 +1,25 @@
+Description: This rule detects anomalies across multiple platforms (AWS, GCP) and authentication-related activities using UEBA templates.It helps identify suspicious logons, MFA failures, and unusual authentication patterns that may indicate account compromise or insider threats.
+  
+- connectorId: BehaviorAnalytics
+
+  tactics:
+    - InitialAccess
+    - CredentialAccess
+    - DefenseEvasion
+  techniques:
+    - T1078  # Valid Accounts
+    - T1110  # Brute Force
+    - T1556  # Modify Authentication Process
+
+  Query: 
+Anomalies
+| where AnomalyTemplateName in (
+    "UEBA Anomalous Logon in AwsCloudTrail",      // AWS CloudTrail anomalies
+    "UEBA Anomalous Activity in GCP Audit Logs",  // GCP IAM anomalies
+    "UEBA Anomalous Authentication"               // Authentication anomalies
+)
+| project TimeGenerated, WorkspaceId, AnomalyTemplateName, Score, Description, AnomalyDetails, ActivityInsights, DeviceInsights, UserInsights, Tactics, Techniques
+| extend Account_0_Name = tostring(UserInsights.UserPrincipalName)
+| extend IP_0_Address = tostring(ActivityInsights.SourceIPAddress)
+
+  
