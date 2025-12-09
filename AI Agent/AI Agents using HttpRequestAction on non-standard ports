@@ -1,0 +1,30 @@
+Detect AI Agents using HttpRequestAction on non-standard ports
+
+tactics:
+  - Command and Control
+  - Exfiltration
+  - Defense Evasion
+techniques:
+  - id: T1571: Non-Standard Port
+  - id: T1071.001: Application Layer Protocol: Web Protocol
+
+data_connector: AIAgentsInfo
+
+query: |
+  AIAgentsInfo 
+  // Find agents with topic that contains Http request action to non 443/80 port 
+  | summarize arg_max(Timestamp, *) by AIAgentId 
+  | where AgentStatus != "Deleted" 
+  | mvexpand Topic = AgentTopicsDetails 
+  | where Topic has "HttpRequestAction" 
+  | extend TopicActions = Topic.beginDialog.actions 
+  | mvexpand action = TopicActions 
+  | where action['$kind'] == "HttpRequestAction" 
+  | extend Url = tostring(action.url.literalValue) 
+  | extend ParsedUrl = parse_url(Url) 
+  | extend Port = tostring(ParsedUrl["Port"]) 
+  | where isnotempty(Port) and Port != "443" and Port != "80"
+  | project-reorder AgentCreationTime, AIAgentId, AIAgentName, ParsedUrl, Url, Port, AgentStatus, CreatorAccountUpn, OwnerAccountUpns, Topic
+  | extend AccountCustomEntity = CreatorAccountUpn
+  | extend HostCustomEntity = AIAgentName
+  | extend URLCustomEntity = Url
