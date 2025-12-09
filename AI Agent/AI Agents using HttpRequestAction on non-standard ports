@@ -1,4 +1,4 @@
-Detect AI Agents using HttpRequestAction on non-standard ports
+Description: Detect AI Agents using HttpRequestAction on non-standard ports
 
 tactics:
   - Command and Control
@@ -10,7 +10,7 @@ techniques:
 
 data_connector: AIAgentsInfo
 
-query: |
+Query: |
   AIAgentsInfo 
   // Find agents with topic that contains Http request action to non 443/80 port 
   | summarize arg_max(Timestamp, *) by AIAgentId 
